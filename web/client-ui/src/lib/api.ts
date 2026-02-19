@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
-// API base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
+// API base URL - use relative path to work with any domain
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Types
 export interface User {
