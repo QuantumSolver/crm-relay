@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -92,35 +93,20 @@ func main() {
 	// Set up HTTP server with enhanced ServeMux (Go 1.22+)
 	mux := http.NewServeMux()
 
-	// Public routes (no authentication required)
+	// Register all routes
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"healthy"}`))
 	})
 	mux.HandleFunc("POST /api/auth/login", handler.HandleLogin)
-
-	// Protected API routes (require authentication)
-	protectedMux := http.NewServeMux()
-	protectedMux.HandleFunc("GET /api/auth/me", handler.HandleGetCurrentUser)
-	protectedMux.HandleFunc("PUT /api/config/local-endpoint", handler.HandleUpdateLocalEndpoint)
-	protectedMux.HandleFunc("PUT /api/config/retry", handler.HandleUpdateRetryConfig)
-	protectedMux.HandleFunc("GET /api/dlq", handler.HandleGetDLQMessages)
-	protectedMux.HandleFunc("POST /api/dlq/", handler.HandleReplayDLQMessage)
-	protectedMux.HandleFunc("DELETE /api/dlq/", handler.HandleDeleteDLQMessage)
-	protectedMux.HandleFunc("GET /api/metrics", handler.HandleGetMetrics)
-
-	// Apply authentication middleware to protected routes
-	protectedHandler := relayclientpkg.CORSMiddleware(
-		relayclientpkg.RecoveryMiddleware(
-			relayclientpkg.LoggingMiddleware(
-				relayclientpkg.JWTMiddleware(jwtService)(protectedMux),
-			),
-		),
-	)
-
-	// Mount protected routes under /api/
-	mux.Handle("/api/", http.StripPrefix("/api", protectedHandler))
+	mux.HandleFunc("GET /api/auth/me", handler.HandleGetCurrentUser)
+	mux.HandleFunc("PUT /api/config/local-endpoint", handler.HandleUpdateLocalEndpoint)
+	mux.HandleFunc("PUT /api/config/retry", handler.HandleUpdateRetryConfig)
+	mux.HandleFunc("GET /api/dlq", handler.HandleGetDLQMessages)
+	mux.HandleFunc("POST /api/dlq/", handler.HandleReplayDLQMessage)
+	mux.HandleFunc("DELETE /api/dlq/", handler.HandleDeleteDLQMessage)
+	mux.HandleFunc("GET /api/metrics", handler.HandleGetMetrics)
 
 	// Serve static files for UI (public)
 	uiDir := http.Dir("web/client-ui/dist")
@@ -145,10 +131,31 @@ func main() {
 		http.ServeFile(w, r, "web/client-ui/dist/index.html")
 	})
 
-	// Apply middleware to public routes only
+	// Create conditional authentication middleware
+	authMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Skip authentication for public routes
+			if r.URL.Path == "/health" ||
+				r.URL.Path == "/api/auth/login" ||
+				r.URL.Path == "/assets/" ||
+				r.URL.Path == "/index.html" ||
+				(r.Method == "GET" && !strings.HasPrefix(r.URL.Path, "/api/")) {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Apply authentication to protected routes
+			authHandler := relayclientpkg.JWTMiddleware(jwtService)(next)
+			authHandler.ServeHTTP(w, r)
+		})
+	}
+
+	// Apply middleware
 	handlerChain := relayclientpkg.CORSMiddleware(
 		relayclientpkg.RecoveryMiddleware(
-			relayclientpkg.LoggingMiddleware(mux),
+			relayclientpkg.LoggingMiddleware(
+				authMiddleware(mux),
+			),
 		),
 	)
 
