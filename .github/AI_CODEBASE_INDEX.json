@@ -1,0 +1,297 @@
+{
+  "project": {
+    "name": "CRM Relay Server",
+    "description": "High-performance webhook relay system using Go and Redis Streams",
+    "language": "Go 1.21+",
+    "repository": "https://github.com/QuantumSolver/crm-relay",
+    "version": "1.0.0",
+    "architectures": ["linux/amd64", "linux/arm64", "linux/arm/v7"]
+  },
+  "architecture": {
+    "components": [
+      {
+        "name": "Relay Server",
+        "purpose": "Public-facing HTTP server that receives webhooks",
+        "entry_point": "cmd/relay-server/main.go",
+        "port": 8080,
+        "endpoints": [
+          {"method": "POST", "path": "/webhook", "description": "Receive webhooks"},
+          {"method": "GET", "path": "/health", "description": "Health check"}
+        ],
+        "dependencies": ["internal/config", "internal/relay-server", "internal/storage", "internal/models"]
+      },
+      {
+        "name": "Relay Client",
+        "purpose": "Consumes messages and forwards to local endpoints",
+        "entry_point": "cmd/relay-client/main.go",
+        "dependencies": ["internal/config", "internal/relay-client", "internal/storage", "internal/models"]
+      },
+      {
+        "name": "Redis Storage",
+        "purpose": "Redis Streams integration for message persistence",
+        "file": "internal/storage/redis.go",
+        "operations": ["XADD", "XREADGROUP", "XACK", "XLEN", "XPENDING"],
+        "dependencies": ["internal/models", "github.com/redis/go-redis/v9"]
+      }
+    ],
+    "data_flow": [
+      "Meta Platform → Relay Server (HTTP POST)",
+      "Relay Server → Redis Streams (XADD)",
+      "Redis Streams → Relay Client (XREADGROUP)",
+      "Relay Client → Local Webhook (HTTP POST)"
+    ]
+  },
+  "file_structure": {
+    "cmd": {
+      "relay-server/main.go": "Relay server entry point",
+      "relay-client/main.go": "Relay client entry point",
+      "test-webhook/main.go": "Test webhook server"
+    },
+    "internal": {
+      "config": {
+        "config.go": "Configuration loader",
+        "config_test.go": "Configuration tests"
+      },
+      "models": {
+        "types.go": "Core data structures",
+        "types_test.go": "Model tests"
+      },
+      "relay-server": {
+        "handler.go": "HTTP request handlers",
+        "middleware.go": "HTTP middleware"
+      },
+      "relay-client": {
+        "consumer.go": "Redis Stream consumer",
+        "forwarder.go": "Webhook forwarder"
+      },
+      "storage": {
+        "redis.go": "Redis client and operations"
+      }
+    },
+    ".github": {
+      "instructions": {
+        "go.instructions.md": "Go coding standards",
+        "python.instructions.md": "Python coding standards"
+      },
+      "skills": {
+        "redis-development/SKILL.md": "Redis best practices"
+      },
+      "workflows": {
+        "docker-build-push.yml": "Multi-arch Docker builds",
+        "README.md": "Workflow documentation"
+      }
+    },
+    "Dockerfile.relay-server": "Multi-arch server image",
+    "Dockerfile.relay-client": "Multi-arch client image",
+    "docker-compose.yml": "Local development stack",
+    "Makefile": "Build commands",
+    "go.mod": "Go module definition",
+    "go.sum": "Go module checksums",
+    ".env.example": "Configuration template",
+    ".gitignore": "Git ignore patterns",
+    "README.md": "Main documentation",
+    "QUICKSTART.md": "Quick start guide",
+    "IMPLEMENTATION_SUMMARY.md": "Implementation details"
+  },
+  "data_models": {
+    "Webhook": {
+      "fields": ["ID", "Headers", "Body", "Timestamp", "Signature"],
+      "purpose": "Incoming webhook data"
+    },
+    "RelayMessage": {
+      "fields": ["MessageID", "Webhook", "RetryCount", "CreatedAt"],
+      "purpose": "Message in Redis Stream"
+    },
+    "Config": {
+      "fields": ["ServerPort", "RedisURL", "APIKey", "LocalWebhookURL", "MaxRetries", "RetryDelay", "RetryMultiplier", "StreamName", "ConsumerGroup", "ConsumerName", "DeadLetterQueue", "MessageTTL", "HealthCheckInterval"],
+      "purpose": "Configuration struct"
+    },
+    "Metrics": {
+      "fields": ["WebhooksReceived", "WebhooksProcessed", "WebhooksFailed", "WebhooksRetried", "QueueDepth", "AverageLatency", "LastWebhookTime"],
+      "purpose": "Runtime metrics"
+    },
+    "RelayError": {
+      "fields": ["Code", "Message", "Err"],
+      "purpose": "Custom error type"
+    }
+  },
+  "error_codes": {
+    "ErrCodeInvalidRequest": "Invalid request",
+    "ErrCodeAuthentication": "Authentication failed",
+    "ErrCodeRedisConnection": "Redis connection error",
+    "ErrCodeStreamWrite": "Stream write error",
+    "ErrCodeStreamRead": "Stream read error",
+    "ErrCodeWebhookForward": "Webhook forward error",
+    "ErrCodeMaxRetriesExceeded": "Max retries exceeded",
+    "ErrCodeInvalidConfig": "Invalid configuration"
+  },
+  "configuration": {
+    "server": {
+      "SERVER_PORT": {"default": 8080, "description": "HTTP server port"}
+    },
+    "redis": {
+      "REDIS_URL": {"default": "localhost:6379", "description": "Redis connection URL"},
+      "REDIS_PASSWORD": {"default": "", "description": "Redis password"},
+      "REDIS_DB": {"default": 0, "description": "Redis database number"}
+    },
+    "stream": {
+      "STREAM_NAME": {"default": "webhook-stream", "description": "Stream name"},
+      "CONSUMER_GROUP": {"default": "relay-group", "description": "Consumer group name"},
+      "CONSUMER_NAME": {"default": "relay-client", "description": "Consumer name"},
+      "DEAD_LETTER_QUEUE": {"default": "webhook-dlq", "description": "DLQ name"},
+      "MESSAGE_TTL": {"default": 86400, "description": "Message TTL in seconds"}
+    },
+    "authentication": {
+      "API_KEY": {"required": true, "description": "API key for authentication"}
+    },
+    "client": {
+      "LOCAL_WEBHOOK_URL": {"required": true, "description": "Local webhook URL"}
+    },
+    "retry": {
+      "MAX_RETRIES": {"default": 3, "description": "Maximum retries"},
+      "RETRY_DELAY": {"default": 1000, "description": "Initial delay in ms"},
+      "RETRY_MULTIPLIER": {"default": 2.0, "description": "Backoff multiplier"}
+    },
+    "health": {
+      "HEALTH_CHECK_INTERVAL": {"default": 30, "description": "Interval in seconds"}
+    }
+  },
+  "dependencies": {
+    "go_modules": [
+      {"name": "github.com/redis/go-redis/v9", "purpose": "Redis client"},
+      {"name": "github.com/google/uuid", "purpose": "UUID generation"}
+    ],
+    "external_services": [
+      {"name": "Redis 7+", "purpose": "Message queue and persistence"},
+      {"name": "GitHub Container Registry", "purpose": "Docker image registry"}
+    ]
+  },
+  "build_targets": {
+    "make": {
+      "build": "Build all binaries",
+      "build-server": "Build relay server binary",
+      "build-client": "Build relay client binary",
+      "build-multiarch": "Build multi-architecture binaries",
+      "test": "Run all tests",
+      "test-coverage": "Run tests with coverage",
+      "clean": "Clean build artifacts",
+      "docker-build": "Build Docker images",
+      "docker-push": "Push Docker images to GHCR"
+    },
+    "docker": {
+      "docker-compose build": "Build all images",
+      "docker-compose up -d": "Start services",
+      "docker-compose logs -f": "View logs",
+      "docker-compose down": "Stop services"
+    }
+  },
+  "modification_patterns": {
+    "add_http_endpoint": {
+      "files": ["internal/relay-server/handler.go", "cmd/relay-server/main.go"],
+      "steps": [
+        "Add handler function in handler.go",
+        "Register route in main.go",
+        "Add middleware if needed",
+        "Update documentation"
+      ]
+    },
+    "add_config_variable": {
+      "files": ["internal/models/types.go", "internal/config/config.go", ".env.example"],
+      "steps": [
+        "Add field to Config struct",
+        "Add loading logic in config.go",
+        "Add validation in config.go",
+        "Add to .env.example",
+        "Update documentation"
+      ]
+    },
+    "modify_retry_logic": {
+      "files": ["internal/relay-client/consumer.go"],
+      "steps": [
+        "Update forwardWithRetry() function",
+        "Adjust backoff calculation",
+        "Update Config struct if needed",
+        "Add tests"
+      ]
+    },
+    "add_middleware": {
+      "files": ["internal/relay-server/middleware.go", "cmd/relay-server/main.go"],
+      "steps": [
+        "Create middleware function",
+        "Apply in main.go",
+        "Add tests"
+      ]
+    },
+    "add_metrics": {
+      "files": ["internal/models/types.go", "relevant handler/consumer"],
+      "steps": [
+        "Add field to Metrics struct",
+        "Update metric in relevant code",
+        "Update health check endpoint",
+        "Update documentation"
+      ]
+    }
+  },
+  "file_dependencies": {
+    "cmd/relay-server/main.go": ["internal/config/config.go", "internal/relay-server/handler.go", "internal/relay-server/middleware.go"],
+    "cmd/relay-client/main.go": ["internal/config/config.go", "internal/relay-client/consumer.go"],
+    "internal/relay-server/handler.go": ["internal/models/types.go", "internal/storage/redis.go"],
+    "internal/relay-server/middleware.go": ["internal/models/types.go"],
+    "internal/relay-client/consumer.go": ["internal/models/types.go", "internal/storage/redis.go", "internal/relay-client/forwarder.go"],
+    "internal/relay-client/forwarder.go": ["internal/models/types.go"],
+    "internal/storage/redis.go": ["internal/models/types.go", "github.com/redis/go-redis/v9"],
+    "internal/config/config.go": ["internal/models/types.go"]
+  },
+  "testing": {
+    "unit_tests": [
+      "internal/config/config_test.go",
+      "internal/models/types_test.go"
+    ],
+    "commands": {
+      "run_tests": "go test ./...",
+      "run_coverage": "go test -cover ./...",
+      "run_specific": "go test ./internal/config"
+    }
+  },
+  "deployment": {
+    "docker_images": [
+      "ghcr.io/QuantumSolver/crm-relay/relay-server",
+      "ghcr.io/QuantumSolver/crm-relay/relay-client"
+    ],
+    "platforms": ["linux/amd64", "linux/arm64", "linux/arm/v7"],
+    "workflow": ".github/workflows/docker-build-push.yml",
+    "triggers": ["push to main", "tag push", "pull request"]
+  },
+  "guidelines": {
+    "code_style": ".github/instructions/go.instructions.md",
+    "redis_best_practices": ".github/skills/redis-development/SKILL.md",
+    "testing": "Write unit tests for all new code, use table-driven tests, mock external dependencies",
+    "documentation": "Update README.md for user-facing changes, update AI_CODEBASE_INDEX.md for structural changes"
+  },
+  "troubleshooting": {
+    "redis_connection_failed": {
+      "checks": ["Redis is running", "REDIS_URL is correct", "Network connectivity"]
+    },
+    "webhook_not_delivered": {
+      "checks": ["Relay client logs", "LOCAL_WEBHOOK_URL is correct", "Dead letter queue"]
+    },
+    "build_fails": {
+      "checks": ["Go version is 1.21+", "Run go mod tidy", "Verify dependencies"]
+    }
+  },
+  "ai_assistant_quick_reference": {
+    "add_http_endpoint": ["internal/relay-server/handler.go", "cmd/relay-server/main.go"],
+    "add_config_variable": ["internal/models/types.go", "internal/config/config.go", ".env.example"],
+    "modify_retry_logic": ["internal/relay-client/consumer.go"],
+    "add_middleware": ["internal/relay-server/middleware.go", "cmd/relay-server/main.go"],
+    "add_metrics": ["internal/models/types.go", "relevant handler/consumer"],
+    "modify_docker_build": ["Dockerfile.*", ".github/workflows/docker-build-push.yml"],
+    "update_documentation": ["README.md", "QUICKSTART.md", ".github/AI_CODEBASE_INDEX.md"]
+  },
+  "metadata": {
+    "created": "2026-02-19",
+    "last_updated": "2026-02-19",
+    "maintainer": "QuantumSolver",
+    "license": "MIT"
+  }
+}

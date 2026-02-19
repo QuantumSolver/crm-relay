@@ -15,6 +15,21 @@ Meta Platform → Relay Server (public) → Redis Streams → Relay Client (priv
 - **Relay Client**: Consumes messages from Redis Streams and forwards them to local webhook endpoints
 - **Dead Letter Queue**: Captures failed messages for inspection and replay
 
+## AI Codebase Index
+
+This project includes a comprehensive AI-optimized codebase index to help AI assistants understand the project structure and make effective modifications:
+
+- **[AI_CODEBASE_INDEX.md](.github/AI_CODEBASE_INDEX.md)** - Detailed markdown documentation
+- **[AI_CODEBASE_INDEX.json](.github/AI_CODEBASE_INDEX.json)** - Machine-readable JSON format
+- **[AI_CODEBASE_INDEX.yaml](.github/AI_CODEBASE_INDEX.yaml)** - Machine-readable YAML format
+
+These files provide:
+- Complete architecture overview
+- File structure and dependencies
+- Data models and configuration
+- Common modification patterns
+- Quick reference for AI assistants
+
 ## Features
 
 - ✅ High-performance webhook relay using Go and Redis Streams
@@ -27,6 +42,7 @@ Meta Platform → Relay Server (public) → Redis Streams → Relay Client (priv
 - ✅ Graceful shutdown
 - ✅ Docker support with multi-platform images
 - ✅ Single binary deployment
+- ✅ AI-optimized codebase index for easy modifications
 
 ## Quick Start
 
