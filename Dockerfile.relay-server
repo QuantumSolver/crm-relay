@@ -9,7 +9,7 @@ ARG TARGETARCH
 WORKDIR /app
 
 # Install dependencies
-RUN apk add --no-cache git
+RUN apk add --no-cache git nodejs npm
 
 # Copy go mod files
 COPY go.mod go.sum ./
@@ -18,7 +18,13 @@ RUN go mod download
 # Copy source code
 COPY . .
 
+# Build server UI
+WORKDIR /app/web/server-ui
+RUN npm install
+RUN npm run build
+
 # Build relay server for target platform
+WORKDIR /app
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -a -installsuffix cgo -o relay-server ./cmd/relay-server
 
 # Runtime stage

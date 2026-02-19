@@ -94,8 +94,15 @@ func (c *Consumer) processMessage(ctx context.Context, message interface{}) {
 		return
 	}
 
-	log.Printf("Processing message: ID=%s, WebhookID=%s, RetryCount=%d",
-		redisMessage.ID, relayMessage.Webhook.ID, relayMessage.RetryCount)
+	// Log routing information
+	if relayMessage.Webhook.Platform != "" {
+		log.Printf("Processing message: ID=%s, WebhookID=%s, Platform=%s, EndpointID=%s, HTTPMethod=%s, RetryCount=%d",
+			redisMessage.ID, relayMessage.Webhook.ID, relayMessage.Webhook.Platform,
+			relayMessage.Webhook.EndpointID, relayMessage.Webhook.HTTPMethod, relayMessage.RetryCount)
+	} else {
+		log.Printf("Processing message: ID=%s, WebhookID=%s, RetryCount=%d",
+			redisMessage.ID, relayMessage.Webhook.ID, relayMessage.RetryCount)
+	}
 
 	// Forward webhook
 	err = c.forwarder.Forward(ctx, &relayMessage.Webhook)

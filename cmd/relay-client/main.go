@@ -2,16 +2,25 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"embed"
+	"encoding/base64"
+	"io/fs"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/yourusername/crm-relay/internal/auth"
 	"github.com/yourusername/crm-relay/internal/config"
 	relayclientpkg "github.com/yourusername/crm-relay/internal/relay-client"
 	"github.com/yourusername/crm-relay/internal/storage"
 )
+
+//go:embed web/client-ui/dist
+var uiFS embed.FS
 
 func main() {
 	log.Println("Starting CRM Relay Client...")
@@ -34,6 +43,45 @@ func main() {
 
 	log.Println("Redis client initialized successfully")
 
+	// Initialize JWT service
+	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpiration)
+
+	// Generate JWT secret if not set
+	if cfg.JWTSecret == "" {
+		bytes := make([]byte, 32)
+		if _, err := rand.Read(bytes); err != nil {
+			log.Fatalf("Failed to generate JWT secret: %v", err)
+		}
+		cfg.JWTSecret = base64.URLEncoding.EncodeToString(bytes)
+		log.Printf("Generated JWT secret: %s", cfg.JWTSecret)
+	}
+
+	// Initialize default admin user
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	adminPassword := cfg.AdminPassword
+	if adminPassword == "" {
+		// Generate random password
+		bytes := make([]byte, 16)
+		if _, err := rand.Read(bytes); err != nil {
+			log.Fatalf("Failed to generate admin password: %v", err)
+		}
+		adminPassword = base64.URLEncoding.EncodeToString(bytes)
+		log.Printf("Generated admin password: %s", adminPassword)
+	}
+
+	adminPasswordHash, err := auth.HashPassword(adminPassword)
+	if err != nil {
+		log.Fatalf("Failed to hash admin password: %v", err)
+	}
+
+	if err := redisClient.InitializeDefaultUser(ctx, cfg.AdminUsername, adminPasswordHash); err != nil {
+		log.Fatalf("Failed to initialize default admin user: %v", err)
+	}
+
+	log.Printf("Default admin user initialized: username=%s, password=%s", cfg.AdminUsername, adminPassword)
+
 	// Create forwarder
 	forwarder := relayclientpkg.NewForwarder(cfg)
 	defer forwarder.Close()
@@ -43,8 +91,83 @@ func main() {
 	// Create consumer
 	consumer := relayclientpkg.NewConsumer(redisClient, cfg, forwarder)
 
+	// Create handler
+	handler := relayclientpkg.NewHandler(redisClient, cfg, jwtService)
+
+	// Set up HTTP server with enhanced ServeMux (Go 1.22+)
+	mux := http.NewServeMux()
+
+	// Register routes
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"healthy"}`))
+	})
+
+	// Auth endpoints
+	mux.HandleFunc("POST /api/auth/login", handler.HandleLogin)
+	mux.HandleFunc("GET /api/auth/me", handler.HandleGetCurrentUser)
+
+	// Configuration endpoints
+	mux.HandleFunc("PUT /api/config/local-endpoint", handler.HandleUpdateLocalEndpoint)
+	mux.HandleFunc("PUT /api/config/retry", handler.HandleUpdateRetryConfig)
+
+	// DLQ endpoints
+	mux.HandleFunc("GET /api/dlq", handler.HandleGetDLQMessages)
+	mux.HandleFunc("POST /api/dlq/", handler.HandleReplayDLQMessage)
+	mux.HandleFunc("DELETE /api/dlq/", handler.HandleDeleteDLQMessage)
+
+	// Metrics endpoints
+	mux.HandleFunc("GET /api/metrics", handler.HandleGetMetrics)
+
+	// Serve static files for UI
+	uiDist, err := fs.Sub(uiFS, "web/client-ui/dist")
+	if err != nil {
+		log.Printf("Warning: UI dist directory not found: %v", err)
+	} else {
+		// Serve static assets
+		fileServer := http.FileServer(http.FS(uiDist))
+		mux.Handle("GET /assets/", fileServer)
+		mux.Handle("GET /index.html", fileServer)
+
+		// SPA fallback - serve index.html for all non-API routes
+		mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+			// Skip API routes
+			if r.URL.Path == "/health" ||
+			   r.URL.Path == "/api/" ||
+			   r.URL.Path == "/api/auth/login" ||
+			   r.URL.Path == "/api/auth/me" ||
+			   r.URL.Path == "/api/config/local-endpoint" ||
+			   r.URL.Path == "/api/config/retry" ||
+			   r.URL.Path == "/api/dlq" ||
+			   r.URL.Path == "/api/metrics" {
+				http.NotFound(w, r)
+				return
+			}
+			http.ServeFileFS(w, r, uiDist, "index.html")
+		})
+	}
+
+	// Apply middleware
+	handlerChain := relayclientpkg.CORSMiddleware(
+		relayclientpkg.RecoveryMiddleware(
+			relayclientpkg.LoggingMiddleware(
+				relayclientpkg.JWTMiddleware(jwtService)(mux),
+			),
+		),
+	)
+
+	// Create HTTP server
+	server := &http.Server{
+		Addr:         ":" + cfg.ServerPort,
+		Handler:      handlerChain,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
 	// Create context for graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 
 	// Start consumer in a goroutine
@@ -73,6 +196,14 @@ func main() {
 		}
 	}()
 
+	// Start HTTP server in a goroutine
+	go func() {
+		log.Printf("HTTP server listening on port %s", cfg.ServerPort)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("HTTP server error: %v", err)
+		}
+	}()
+
 	log.Println("Relay client is running...")
 
 	// Wait for interrupt signal
@@ -87,6 +218,13 @@ func main() {
 
 	// Cancel context
 	cancel()
+
+	// Shutdown HTTP server
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("HTTP server shutdown error: %v", err)
+	}
 
 	// Wait a bit for cleanup
 	time.Sleep(2 * time.Second)

@@ -1,7 +1,7 @@
-.PHONY: build build-server build-client build-multiarch test test-coverage clean docker-build docker-up docker-down docker-logs run-server run-client
+.PHONY: build build-server build-client build-ui-server build-ui-client build-multiarch test test-coverage clean docker-build docker-up docker-down docker-logs run-server run-client
 
 # Build targets
-build: build-server build-client
+build: build-server build-client build-ui-server build-ui-client
 
 build-server:
 	@echo "Building relay server..."
@@ -10,6 +10,14 @@ build-server:
 build-client:
 	@echo "Building relay client..."
 	@export PATH=/snap/go/current/bin:$PATH && go build -o bin/relay-client ./cmd/relay-client
+
+build-ui-server:
+	@echo "Building server UI..."
+	@cd web/server-ui && npm install && npm run build
+
+build-ui-client:
+	@echo "Building client UI..."
+	@cd web/client-ui && npm install && npm run build
 
 # Multi-architecture build targets
 build-multiarch: build-server-amd64 build-server-arm64 build-server-armv7 build-client-amd64 build-client-arm64 build-client-armv7

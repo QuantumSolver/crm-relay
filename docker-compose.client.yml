@@ -4,8 +4,10 @@ services:
   relay-client:
     image: ghcr.io/quantumsolver/crm-relay/relay-client:latest
     container_name: crm-relay-client
+    ports:
+      - "8081:8081"
     environment:
-      - SERVER_PORT=8080
+      - SERVER_PORT=8081
       - REDIS_URL=${REDIS_URL:-redis:6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_DB=0
@@ -15,6 +17,10 @@ services:
       - DEAD_LETTER_QUEUE=${DEAD_LETTER_QUEUE:-webhook-dlq}
       - MESSAGE_TTL=${MESSAGE_TTL:-86400}
       - API_KEY=${API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-24h}
       - LOCAL_WEBHOOK_URL=${LOCAL_WEBHOOK_URL:-http://nginx:3000/webhook}
       - MAX_RETRIES=${MAX_RETRIES:-3}
       - RETRY_DELAY=${RETRY_DELAY:-1000}

@@ -1,11 +1,13 @@
 package relayserver
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/yourusername/crm-relay/internal/auth"
 	"github.com/yourusername/crm-relay/internal/models"
 )
 
@@ -72,8 +74,8 @@ func AuthenticationMiddleware(apiKey string) func(http.Handler) http.Handler {
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
@@ -82,6 +84,63 @@ func CORSMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// JWTMiddleware validates JWT tokens
+func JWTMiddleware(jwtService *auth.JWTService) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Skip JWT for health check and login
+			if r.URL.Path == "/health" || r.URL.Path == "/api/auth/login" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Skip JWT for webhook endpoints (they use API key auth)
+			if r.URL.Path == "/webhook" || (len(r.URL.Path) > 8 && r.URL.Path[:8] == "/webhook/") {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Get token from Authorization header
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				sendErrorResponse(w, http.StatusUnauthorized, models.NewRelayError(
+					models.ErrCodeAuthentication,
+					"missing authorization header",
+					nil,
+				))
+				return
+			}
+
+			// Extract token from "Bearer <token>"
+			if len(authHeader) < 7 || authHeader[:7] != "Bearer " {
+				sendErrorResponse(w, http.StatusUnauthorized, models.NewRelayError(
+					models.ErrCodeAuthentication,
+					"invalid authorization header format",
+					nil,
+				))
+				return
+			}
+
+			tokenString := authHeader[7:]
+
+			// Validate token
+			claims, err := jwtService.ValidateToken(tokenString)
+			if err != nil {
+				sendErrorResponse(w, http.StatusUnauthorized, models.NewRelayError(
+					models.ErrCodeAuthentication,
+					"invalid token",
+					err,
+				))
+				return
+			}
+
+			// Add user context to request
+			ctx := context.WithValue(r.Context(), "user", claims)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 // sendErrorResponse sends an error response as JSON
