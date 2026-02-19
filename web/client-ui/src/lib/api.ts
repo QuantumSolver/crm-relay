@@ -20,12 +20,15 @@ export interface LoginResponse {
 }
 
 export interface Metrics {
-  WebhooksReceived: number;
-  WebhooksProcessed: number;
-  WebhooksFailed: number;
-  WebhooksRetried: number;
-  AverageLatency: number;
-  LastWebhookTime: string;
+  webhooks_received: number;
+  webhooks_processed: number;
+  webhooks_failed: number;
+  webhooks_retried: number;
+  average_latency_ms: number;
+  last_webhook_time: string;
+  // Additional fields may be present
+  queue_depth?: number;
+  pending_messages?: number;
 }
 
 export interface DLQMessage {

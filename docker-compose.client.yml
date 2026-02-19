@@ -26,8 +26,11 @@ services:
       - HEALTH_CHECK_INTERVAL=${HEALTH_CHECK_INTERVAL:-30}
     networks:
       - crm-relay_crm-relay-network
+      - dockernet
     restart: unless-stopped
 
 networks:
   crm-relay_crm-relay-network:
+    external: true
+  dockernet:
     external: true

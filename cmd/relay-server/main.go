@@ -140,10 +140,8 @@ func main() {
 				return
 			}
 
-			// Apply authentication to protected routes
-			authHandler := relayserverpkg.JWTMiddleware(jwtService)(
-				relayserverpkg.AuthenticationMiddleware(cfg.APIKey)(next),
-			)
+			// Apply authentication to protected routes (JWT only for UI)
+			authHandler := relayserverpkg.JWTMiddleware(jwtService)(next)
 			authHandler.ServeHTTP(w, r)
 		})
 	}

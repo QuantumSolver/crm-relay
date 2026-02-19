@@ -51,7 +51,7 @@ export default function Dashboard() {
   const cards = [
     {
       title: 'Webhooks Processed',
-      value: metrics.WebhooksProcessed,
+      value: metrics.webhooks_processed,
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -63,7 +63,7 @@ export default function Dashboard() {
     },
     {
       title: 'Webhooks Failed',
-      value: metrics.WebhooksFailed,
+      value: metrics.webhooks_failed,
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -75,7 +75,7 @@ export default function Dashboard() {
     },
     {
       title: 'Webhooks Retried',
-      value: metrics.WebhooksRetried,
+      value: metrics.webhooks_retried,
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -87,7 +87,7 @@ export default function Dashboard() {
     },
     {
       title: 'Average Latency',
-      value: `${metrics.AverageLatency}ms`,
+      value: `${metrics.average_latency_ms}ms`,
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -141,7 +141,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Webhooks Received</p>
-              <p className="text-2xl font-bold text-gray-900">{metrics.WebhooksReceived.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">{metrics.webhooks_received.toLocaleString()}</p>
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
@@ -153,8 +153,8 @@ export default function Dashboard() {
             <div>
               <p className="text-sm text-gray-600">Last Webhook</p>
               <p className="text-lg font-semibold text-gray-900">
-                {metrics.LastWebhookTime
-                  ? new Date(metrics.LastWebhookTime).toLocaleString()
+                {metrics.last_webhook_time
+                  ? new Date(metrics.last_webhook_time).toLocaleString()
                   : 'Never'}
               </p>
             </div>
