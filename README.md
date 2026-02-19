@@ -92,6 +92,43 @@ These files provide:
 
 ### Docker Deployment
 
+#### Option 1: Separate Server and Client (Recommended for Production)
+
+1. **Create external network for client**
+   ```bash
+   docker network create dockernet
+   ```
+
+2. **Configure environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env and set your API_KEY
+   ```
+
+3. **Start server with Redis**
+   ```bash
+   docker-compose -f docker-compose.server.yml up -d
+   ```
+
+4. **Start client (attached to dockernet network)**
+   ```bash
+   docker-compose -f docker-compose.client.yml up -d
+   ```
+
+5. **View logs**
+   ```bash
+   docker-compose -f docker-compose.server.yml logs -f
+   docker-compose -f docker-compose.client.yml logs -f
+   ```
+
+6. **Stop services**
+   ```bash
+   docker-compose -f docker-compose.server.yml down
+   docker-compose -f docker-compose.client.yml down
+   ```
+
+#### Option 2: All-in-One (Development)
+
 1. **Build and start all services**
    ```bash
    docker-compose up -d
@@ -109,7 +146,7 @@ These files provide:
 
 ### Using Pre-built Multi-Architecture Images
 
-Pull images from GitHub Container Registry (supports AMD64, ARM64, ARMv7):
+The separate Docker Compose files use pre-built images from GitHub Container Registry (supports AMD64, ARM64, ARMv7):
 
 ```bash
 # Pull latest images
@@ -119,18 +156,7 @@ docker pull ghcr.io/QuantumSolver/crm-relay/relay-client:latest
 # Docker automatically selects the correct architecture for your system
 ```
 
-Update your `docker-compose.yml` to use pre-built images:
-
-```yaml
-services:
-  relay-server:
-    image: ghcr.io/QuantumSolver/crm-relay/relay-server:latest
-    # Remove build section
-
-  relay-client:
-    image: ghcr.io/QuantumSolver/crm-relay/relay-client:latest
-    # Remove build section
-```
+The `docker-compose.server.yml` and `docker-compose.client.yml` files are already configured to use these pre-built images.
 
 ### Building Multi-Architecture Binaries Locally
 

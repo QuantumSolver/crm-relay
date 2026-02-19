@@ -59,8 +59,8 @@ func NewRedisClient(cfg *models.Config) (*RedisClient, error) {
 
 // initConsumerGroup initializes the consumer group if it doesn't exist
 func (r *RedisClient) initConsumerGroup(ctx context.Context) error {
-	// Try to create consumer group
-	err := r.client.XGroupCreate(ctx, r.config.StreamName, r.config.ConsumerGroup, "0").Err()
+	// Try to create consumer group with MKSTREAM option to create stream if it doesn't exist
+	err := r.client.XGroupCreateMkStream(ctx, r.config.StreamName, r.config.ConsumerGroup, "0").Err()
 	if err != nil {
 		// If group already exists, that's fine
 		if strings.Contains(err.Error(), "BUSYGROUP") {

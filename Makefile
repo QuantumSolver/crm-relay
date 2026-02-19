@@ -56,19 +56,45 @@ clean:
 # Docker targets
 docker-build:
 	@echo "Building Docker images..."
-	@docker-compose build
+	@docker compose build
 
 docker-up:
 	@echo "Starting services..."
-	@docker-compose up -d
+	@docker compose up -d
 
 docker-down:
 	@echo "Stopping services..."
-	@docker-compose down
+	@docker compose down
 
 docker-logs:
 	@echo "Showing logs..."
-	@docker-compose logs -f
+	@docker compose logs -f
+
+# Server Docker targets
+docker-server-up:
+	@echo "Starting server services..."
+	@docker compose -f docker-compose.server.yml up -d
+
+docker-server-down:
+	@echo "Stopping server services..."
+	@docker compose -f docker-compose.server.yml down
+
+docker-server-logs:
+	@echo "Showing server logs..."
+	@docker compose -f docker-compose.server.yml logs -f
+
+# Client Docker targets
+docker-client-up:
+	@echo "Starting client services..."
+	@docker compose -f docker-compose.client.yml up -d
+
+docker-client-down:
+	@echo "Stopping client services..."
+	@docker compose -f docker-compose.client.yml down
+
+docker-client-logs:
+	@echo "Showing client logs..."
+	@docker compose -f docker-compose.client.yml logs -f
 
 # Run targets
 run-server:

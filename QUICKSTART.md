@@ -53,7 +53,71 @@ curl -X POST http://localhost:8080/webhook \
 
 You should see the webhook logged in the test webhook server terminal.
 
-## Option 2: Using Docker Compose
+## Option 2: Using Docker Compose (Separate Server and Client)
+
+### Prerequisites
+
+Ensure you have an external network named `dockernet` for the client to communicate with nginx:
+
+```bash
+docker network create dockernet
+```
+
+### 1. Start Server Services
+
+```bash
+# Copy and configure environment variables
+cp .env.example .env
+# Edit .env and set your API_KEY
+
+# Start server with Redis
+docker-compose -f docker-compose.server.yml up -d
+```
+
+This starts:
+- Redis on port 6379
+- Relay Server on port 8080
+
+### 2. Start Client Service
+
+```bash
+# Start client (attached to dockernet network)
+docker-compose -f docker-compose.client.yml up -d
+```
+
+This starts:
+- Relay Client (configured to forward to nginx on dockernet network)
+
+### 3. Test the Relay
+
+```bash
+curl -X POST http://localhost:8080/webhook \
+  -H "X-API-Key: your-secret-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"event": "test", "data": {"message": "Hello, World!"}}'
+```
+
+### 4. View Logs
+
+```bash
+# View server logs
+docker-compose -f docker-compose.server.yml logs -f
+
+# View client logs
+docker-compose -f docker-compose.client.yml logs -f
+```
+
+### 5. Stop Services
+
+```bash
+# Stop server and Redis
+docker-compose -f docker-compose.server.yml down
+
+# Stop client
+docker-compose -f docker-compose.client.yml down
+```
+
+## Option 3: Using Docker Compose (All-in-One)
 
 ### 1. Start All Services
 
