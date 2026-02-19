@@ -39,5 +39,11 @@ WORKDIR /root/
 # Copy binary from builder
 COPY --from=builder /app/relay-client .
 
+# Copy UI dist files from builder
+COPY --from=builder /app/web/client-ui/dist ./web/client-ui/dist
+
+# Expose port
+EXPOSE 8081
+
 # Run the relay client
 CMD ["./relay-client"]
