@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/yourusername/crm-relay/internal/models"
+	"github.com/QuantumSolver/crm-relay/internal/models"
 )
 
 // RedisClient wraps the Redis client with stream operations

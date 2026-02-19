@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/yourusername/crm-relay/internal/models"
+	"github.com/QuantumSolver/crm-relay/internal/models"
 )
 
 // Load loads configuration from environment variables

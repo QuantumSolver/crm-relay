@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/yourusername/crm-relay/internal/auth"
-	"github.com/yourusername/crm-relay/internal/models"
-	"github.com/yourusername/crm-relay/internal/storage"
+	"github.com/QuantumSolver/crm-relay/internal/auth"
+	"github.com/QuantumSolver/crm-relay/internal/models"
+	"github.com/QuantumSolver/crm-relay/internal/storage"
 )
 
 // Handler handles HTTP requests for the relay client

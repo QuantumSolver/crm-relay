@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/yourusername/crm-relay/internal/models"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/QuantumSolver/crm-relay/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
 

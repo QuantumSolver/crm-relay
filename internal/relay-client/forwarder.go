@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/yourusername/crm-relay/internal/models"
+	"github.com/QuantumSolver/crm-relay/internal/models"
 )
 
 // Forwarder forwards webhooks to the local endpoint

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/yourusername/crm-relay/internal/models"
-	"github.com/yourusername/crm-relay/internal/storage"
+	"github.com/QuantumSolver/crm-relay/internal/models"
+	"github.com/QuantumSolver/crm-relay/internal/storage"
 )
 
 // Consumer consumes messages from Redis stream

@@ -2,13 +2,12 @@ package relayclient
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/yourusername/crm-relay/internal/auth"
-	"github.com/yourusername/crm-relay/internal/models"
+	"github.com/QuantumSolver/crm-relay/internal/auth"
+	"github.com/QuantumSolver/crm-relay/internal/models"
 )
 
 // LoggingMiddleware logs HTTP requests
@@ -101,23 +100,4 @@ func CORSMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-// sendErrorResponse sends an error response as JSON
-func sendErrorResponse(w http.ResponseWriter, statusCode int, err *models.RelayError) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	response := map[string]interface{}{
-		"error": map[string]interface{}{
-			"code":    err.Code,
-			"message": err.Message,
-		},
-	}
-
-	if err.Err != nil {
-		response["error"].(map[string]interface{})["details"] = err.Err.Error()
-	}
-
-	json.NewEncoder(w).Encode(response)
 }

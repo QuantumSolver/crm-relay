@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/yourusername/crm-relay/internal/auth"
-	"github.com/yourusername/crm-relay/internal/models"
+	"github.com/QuantumSolver/crm-relay/internal/auth"
+	"github.com/QuantumSolver/crm-relay/internal/models"
 )
 
 // LoggingMiddleware logs HTTP requests

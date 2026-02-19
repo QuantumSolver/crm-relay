@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
-	"embed"
 	"encoding/base64"
-	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -13,14 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/yourusername/crm-relay/internal/auth"
-	"github.com/yourusername/crm-relay/internal/config"
-	relayserverpkg "github.com/yourusername/crm-relay/internal/relay-server"
-	"github.com/yourusername/crm-relay/internal/storage"
+	"github.com/QuantumSolver/crm-relay/internal/auth"
+	"github.com/QuantumSolver/crm-relay/internal/config"
+	relayserverpkg "github.com/QuantumSolver/crm-relay/internal/relay-server"
+	"github.com/QuantumSolver/crm-relay/internal/storage"
 )
-
-//go:embed web/server-ui/dist
-var uiFS embed.FS
 
 func main() {
 	log.Println("Starting CRM Relay Server...")
@@ -115,32 +110,27 @@ func main() {
 	mux.HandleFunc("GET /api/pending-messages", handler.HandleGetPendingMessages)
 
 	// Serve static files for UI
-	uiDist, err := fs.Sub(uiFS, "web/server-ui/dist")
-	if err != nil {
-		log.Printf("Warning: UI dist directory not found: %v", err)
-	} else {
-		// Serve static assets
-		fileServer := http.FileServer(http.FS(uiDist))
-		mux.Handle("GET /assets/", fileServer)
-		mux.Handle("GET /index.html", fileServer)
+	uiDir := http.Dir("web/server-ui/dist")
+	fileServer := http.FileServer(uiDir)
+	mux.Handle("GET /assets/", fileServer)
+	mux.Handle("GET /index.html", fileServer)
 
-		// SPA fallback - serve index.html for all non-API routes
-		mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-			// Skip API routes and webhook routes
-			if r.URL.Path == "/health" ||
-			   r.URL.Path == "/webhook" ||
-			   r.URL.Path == "/api/" ||
-			   r.URL.Path == "/api/auth/login" ||
-			   r.URL.Path == "/api/auth/me" ||
-			   r.URL.Path == "/api/keys" ||
-			   r.URL.Path == "/api/endpoints" ||
-			   r.URL.Path == "/api/metrics" {
-				http.NotFound(w, r)
-				return
-			}
-			http.ServeFileFS(w, r, uiDist, "index.html")
-		})
-	}
+	// SPA fallback - serve index.html for all non-API routes
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		// Skip API routes and webhook routes
+		if r.URL.Path == "/health" ||
+			r.URL.Path == "/webhook" ||
+			r.URL.Path == "/api/" ||
+			r.URL.Path == "/api/auth/login" ||
+			r.URL.Path == "/api/auth/me" ||
+			r.URL.Path == "/api/keys" ||
+			r.URL.Path == "/api/endpoints" ||
+			r.URL.Path == "/api/metrics" {
+			http.NotFound(w, r)
+			return
+		}
+		http.ServeFile(w, r, "web/server-ui/dist/index.html")
+	})
 
 	// Apply middleware
 	handlerChain := relayserverpkg.CORSMiddleware(

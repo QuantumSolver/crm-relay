@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/yourusername/crm-relay/internal/auth"
-	"github.com/yourusername/crm-relay/internal/models"
-	"github.com/yourusername/crm-relay/internal/storage"
+	"github.com/QuantumSolver/crm-relay/internal/auth"
+	"github.com/QuantumSolver/crm-relay/internal/models"
+	"github.com/QuantumSolver/crm-relay/internal/storage"
 )
 
 // Handler handles HTTP requests for the relay server
@@ -121,7 +121,6 @@ func (h *Handler) HandleWebhook(w http.ResponseWriter, r *http.Request) {
 	// Get endpoint configuration if platform is specified
 	var endpointID string
 	var httpMethod string
-	var targetEndpoint string
 
 	if platform != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -145,15 +144,6 @@ func (h *Handler) HandleWebhook(w http.ResponseWriter, r *http.Request) {
 		Platform:   platform,
 		EndpointID: endpointID,
 		HTTPMethod: httpMethod,
-	}
-
-	// Create relay message with routing metadata
-	message := models.RelayMessage{
-		MessageID:      webhook.ID,
-		Webhook:        *webhook,
-		RetryCount:     0,
-		CreatedAt:      time.Now(),
-		TargetEndpoint: targetEndpoint,
 	}
 
 	// Add to Redis stream
