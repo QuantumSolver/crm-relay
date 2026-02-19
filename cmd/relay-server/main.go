@@ -83,33 +83,42 @@ func main() {
 	// Set up HTTP server with enhanced ServeMux (Go 1.22+)
 	mux := http.NewServeMux()
 
-	// Register routes
+	// Public routes (no authentication required)
 	mux.HandleFunc("POST /webhook", handler.HandleWebhook)
 	mux.HandleFunc("POST /webhook/", handler.HandleWebhook)
 	mux.HandleFunc("GET /health", handler.HandleHealth)
-
-	// Auth endpoints
 	mux.HandleFunc("POST /api/auth/login", handler.HandleLogin)
-	mux.HandleFunc("GET /api/auth/me", handler.HandleGetCurrentUser)
 
-	// API key management endpoints
-	mux.HandleFunc("GET /api/keys", handler.HandleListAPIKeys)
-	mux.HandleFunc("POST /api/keys", handler.HandleCreateAPIKey)
-	mux.HandleFunc("PUT /api/keys/", handler.HandleUpdateAPIKey)
-	mux.HandleFunc("DELETE /api/keys/", handler.HandleDeleteAPIKey)
+	// Protected API routes (require authentication)
+	protectedMux := http.NewServeMux()
+	protectedMux.HandleFunc("GET /api/auth/me", handler.HandleGetCurrentUser)
+	protectedMux.HandleFunc("GET /api/keys", handler.HandleListAPIKeys)
+	protectedMux.HandleFunc("POST /api/keys", handler.HandleCreateAPIKey)
+	protectedMux.HandleFunc("PUT /api/keys/", handler.HandleUpdateAPIKey)
+	protectedMux.HandleFunc("DELETE /api/keys/", handler.HandleDeleteAPIKey)
+	protectedMux.HandleFunc("GET /api/endpoints", handler.HandleListEndpoints)
+	protectedMux.HandleFunc("POST /api/endpoints", handler.HandleCreateEndpoint)
+	protectedMux.HandleFunc("PUT /api/endpoints/", handler.HandleUpdateEndpoint)
+	protectedMux.HandleFunc("DELETE /api/endpoints/", handler.HandleDeleteEndpoint)
+	protectedMux.HandleFunc("GET /api/metrics", handler.HandleGetMetrics)
+	protectedMux.HandleFunc("GET /api/queue-depth", handler.HandleGetQueueDepth)
+	protectedMux.HandleFunc("GET /api/pending-messages", handler.HandleGetPendingMessages)
 
-	// Webhook endpoint management endpoints
-	mux.HandleFunc("GET /api/endpoints", handler.HandleListEndpoints)
-	mux.HandleFunc("POST /api/endpoints", handler.HandleCreateEndpoint)
-	mux.HandleFunc("PUT /api/endpoints/", handler.HandleUpdateEndpoint)
-	mux.HandleFunc("DELETE /api/endpoints/", handler.HandleDeleteEndpoint)
+	// Apply authentication middleware to protected routes
+	protectedHandler := relayserverpkg.CORSMiddleware(
+		relayserverpkg.RecoveryMiddleware(
+			relayserverpkg.LoggingMiddleware(
+				relayserverpkg.JWTMiddleware(jwtService)(
+					relayserverpkg.AuthenticationMiddleware(cfg.APIKey)(protectedMux),
+				),
+			),
+		),
+	)
 
-	// Metrics endpoints
-	mux.HandleFunc("GET /api/metrics", handler.HandleGetMetrics)
-	mux.HandleFunc("GET /api/queue-depth", handler.HandleGetQueueDepth)
-	mux.HandleFunc("GET /api/pending-messages", handler.HandleGetPendingMessages)
+	// Mount protected routes under /api/
+	mux.Handle("/api/", http.StripPrefix("/api", protectedHandler))
 
-	// Serve static files for UI
+	// Serve static files for UI (public)
 	uiDir := http.Dir("web/server-ui/dist")
 	fileServer := http.FileServer(uiDir)
 	mux.Handle("GET /assets/", fileServer)
@@ -132,14 +141,10 @@ func main() {
 		http.ServeFile(w, r, "web/server-ui/dist/index.html")
 	})
 
-	// Apply middleware
+	// Apply middleware to public routes only
 	handlerChain := relayserverpkg.CORSMiddleware(
 		relayserverpkg.RecoveryMiddleware(
-			relayserverpkg.LoggingMiddleware(
-				relayserverpkg.JWTMiddleware(jwtService)(
-					relayserverpkg.AuthenticationMiddleware(cfg.APIKey)(mux),
-				),
-			),
+			relayserverpkg.LoggingMiddleware(mux),
 		),
 	)
 
