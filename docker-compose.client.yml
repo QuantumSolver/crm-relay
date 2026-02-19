@@ -4,8 +4,6 @@ services:
   relay-client:
     image: ghcr.io/quantumsolver/crm-relay/relay-client:latest
     container_name: crm-relay-client
-    ports:
-      - "8081:8081"
     environment:
       - SERVER_PORT=8081
       - REDIS_URL=${REDIS_URL:-redis:6379}
@@ -27,9 +25,9 @@ services:
       - RETRY_MULTIPLIER=${RETRY_MULTIPLIER:-2.0}
       - HEALTH_CHECK_INTERVAL=${HEALTH_CHECK_INTERVAL:-30}
     networks:
-      - dockernet
+      - crm-relay_crm-relay-network
     restart: unless-stopped
 
 networks:
-  dockernet:
+  crm-relay_crm-relay-network:
     external: true
