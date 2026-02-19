@@ -39,9 +39,6 @@ func main() {
 
 	log.Println("Redis client initialized successfully")
 
-	// Initialize JWT service
-	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpiration)
-
 	// Generate JWT secret if not set
 	if cfg.JWTSecret == "" {
 		bytes := make([]byte, 32)
@@ -51,6 +48,9 @@ func main() {
 		cfg.JWTSecret = base64.URLEncoding.EncodeToString(bytes)
 		log.Printf("Generated JWT secret: %s", cfg.JWTSecret)
 	}
+
+	// Initialize JWT service (must be after secret is set)
+	jwtService := auth.NewJWTService(cfg.JWTSecret, cfg.JWTExpiration)
 
 	// Initialize default admin user
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
