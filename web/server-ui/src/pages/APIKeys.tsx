@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { apiKeysApi, APIKey } from '../lib/api';
+import { apiKeysApi } from '../lib/api';
+import type { APIKey } from '../lib/api';
 
 export default function APIKeys() {
   const [apiKeys, setApiKeys] = useState<APIKey[]>([]);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { metricsApi, Metrics } from '../lib/api';
+import { metricsApi } from '../lib/api';
+import type { Metrics } from '../lib/api';
 
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);

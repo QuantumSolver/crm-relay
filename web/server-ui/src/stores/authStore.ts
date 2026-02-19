@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authApi, LoginRequest, LoginResponse } from '../lib/api';
+import { authApi } from '../lib/api';
+import type { LoginRequest, LoginResponse } from '../lib/api';
 
 interface User {
   id: string;

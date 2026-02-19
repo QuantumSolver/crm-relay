@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { endpointsApi, WebhookEndpoint } from '../lib/api';
+import { endpointsApi } from '../lib/api';
+import type { WebhookEndpoint } from '../lib/api';
 
 export default function Endpoints() {
   const [endpoints, setEndpoints] = useState<WebhookEndpoint[]>([]);
