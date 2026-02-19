@@ -141,7 +141,7 @@ export default function Dashboard() {
                 </div>
                 <span className="text-xs font-medium text-white/80 uppercase tracking-wider">Live</span>
               </div>
-              <p className="text-4xl font-bold text-white mt-4">{card.value.toLocaleString()}</p>
+              <p className="text-4xl font-bold text-white mt-4">{(card.value ?? 0).toLocaleString()}</p>
             </div>
             <div className="p-4 bg-white">
               <h3 className="text-sm font-semibold text-gray-700">{card.title}</h3>

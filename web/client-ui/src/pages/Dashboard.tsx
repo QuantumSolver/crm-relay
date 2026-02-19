@@ -141,7 +141,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Webhooks Received</p>
-              <p className="text-2xl font-bold text-gray-900">{metrics.webhooks_received.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">{(metrics.webhooks_received ?? 0).toLocaleString()}</p>
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">

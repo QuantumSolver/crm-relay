@@ -9,6 +9,9 @@ echo "🚀 restarting and pulling latest CRM Relay Server Setup..."
 
 docker compose -f docker-compose.server.yml pull
 
-docker compose -f docker-compose.server.yml up -d
+docker compose -f docker-compose.client.yml pull
 
-docker compose -f docker-compose.server.yml logs -f
+docker compose -f docker-compose.server.yml up -d
+docker compose -f docker-compose.client.yml up -d
+
+docker compose -f docker-compose.client.yml logs -f

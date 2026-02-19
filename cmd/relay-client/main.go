@@ -101,6 +101,7 @@ func main() {
 	})
 	mux.HandleFunc("POST /api/auth/login", handler.HandleLogin)
 	mux.HandleFunc("GET /api/auth/me", handler.HandleGetCurrentUser)
+	mux.HandleFunc("GET /api/config", handler.HandleGetConfig)
 	mux.HandleFunc("PUT /api/config/local-endpoint", handler.HandleUpdateLocalEndpoint)
 	mux.HandleFunc("PUT /api/config/retry", handler.HandleUpdateRetryConfig)
 	mux.HandleFunc("GET /api/dlq", handler.HandleGetDLQMessages)
@@ -121,6 +122,7 @@ func main() {
 			r.URL.Path == "/api/" ||
 			r.URL.Path == "/api/auth/login" ||
 			r.URL.Path == "/api/auth/me" ||
+			r.URL.Path == "/api/config" ||
 			r.URL.Path == "/api/config/local-endpoint" ||
 			r.URL.Path == "/api/config/retry" ||
 			r.URL.Path == "/api/dlq" ||

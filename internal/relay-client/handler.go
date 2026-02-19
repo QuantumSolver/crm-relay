@@ -151,6 +151,29 @@ func (h *Handler) HandleGetCurrentUser(w http.ResponseWriter, r *http.Request) {
 
 // Configuration endpoints
 
+// HandleGetConfig handles requests to get the current configuration
+func (h *Handler) HandleGetConfig(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		sendErrorResponse(w, http.StatusMethodNotAllowed, models.NewRelayError(
+			models.ErrCodeInvalidRequest,
+			"method not allowed",
+			nil,
+		))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"local_endpoint": h.config.LocalWebhookURL,
+		"retry_config": map[string]interface{}{
+			"max_retries":        h.config.MaxRetries,
+			"retry_delay":        h.config.RetryDelay,
+			"backoff_multiplier": h.config.RetryMultiplier,
+		},
+	})
+}
+
 // HandleUpdateLocalEndpoint handles requests to update the local webhook endpoint
 func (h *Handler) HandleUpdateLocalEndpoint(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
@@ -399,12 +422,12 @@ func (h *Handler) HandleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	metrics := map[string]interface{}{
 		"webhooks_received":  atomic.LoadInt64(&h.metrics.WebhooksReceived),
 		"webhooks_processed": atomic.LoadInt64(&h.metrics.WebhooksProcessed),
-		"webhooks_failed":     atomic.LoadInt64(&h.metrics.WebhooksFailed),
-		"webhooks_retried":    atomic.LoadInt64(&h.metrics.WebhooksRetried),
-		"queue_depth":         queueDepth,
-		"pending_messages":    pendingMessages,
-		"average_latency_ms":  atomic.LoadInt64(&h.metrics.AverageLatency),
-		"last_webhook_time":   h.metrics.LastWebhookTime,
+		"webhooks_failed":    atomic.LoadInt64(&h.metrics.WebhooksFailed),
+		"webhooks_retried":   atomic.LoadInt64(&h.metrics.WebhooksRetried),
+		"queue_depth":        queueDepth,
+		"pending_messages":   pendingMessages,
+		"average_latency_ms": atomic.LoadInt64(&h.metrics.AverageLatency),
+		"last_webhook_time":  h.metrics.LastWebhookTime,
 		"config": map[string]interface{}{
 			"local_webhook_url": h.config.LocalWebhookURL,
 			"max_retries":       h.config.MaxRetries,

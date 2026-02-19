@@ -14,7 +14,7 @@ export default function APIKeys() {
   const fetchApiKeys = async () => {
     try {
       const data = await apiKeysApi.list();
-      setApiKeys(data.api_keys);
+      setApiKeys(data.api_keys || []);
     } catch (error) {
       console.error('Failed to fetch API keys:', error);
       showMessage('error', 'Failed to load API keys');
@@ -122,11 +122,10 @@ export default function APIKeys() {
 
       {message && (
         <div
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-            message.type === 'success'
+          className={`flex items-center gap-3 px-4 py-3 rounded-lg ${message.type === 'success'
               ? 'bg-green-50 border border-green-200 text-green-700'
               : 'bg-red-50 border border-red-200 text-red-700'
-          }`}
+            }`}
         >
           {message.type === 'success' ? (
             <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -220,11 +219,10 @@ export default function APIKeys() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        key.is_active
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${key.is_active
                           ? 'bg-green-100 text-green-700'
                           : 'bg-red-100 text-red-700'
-                      }`}
+                        }`}
                     >
                       <span className={`w-2 h-2 rounded-full ${key.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
                       {key.is_active ? 'Active' : 'Inactive'}
@@ -246,11 +244,10 @@ export default function APIKeys() {
                       </button>
                       <button
                         onClick={() => handleToggleActive(key)}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          key.is_active
+                        className={`p-1.5 rounded-lg transition-colors ${key.is_active
                             ? 'text-yellow-600 hover:bg-yellow-50'
                             : 'text-green-600 hover:bg-green-50'
-                        }`}
+                          }`}
                         title={key.is_active ? 'Disable' : 'Enable'}
                       >
                         {key.is_active ? (

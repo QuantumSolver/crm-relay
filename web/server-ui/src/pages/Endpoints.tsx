@@ -24,7 +24,7 @@ export default function Endpoints() {
   const fetchEndpoints = async () => {
     try {
       const data = await endpointsApi.list();
-      setEndpoints(data.endpoints);
+      setEndpoints(data.endpoints || []);
     } catch (error) {
       console.error('Failed to fetch endpoints:', error);
     } finally {
@@ -126,11 +126,10 @@ export default function Endpoints() {
       {/* Message Notification */}
       {message && (
         <div
-          className={`mb-4 p-4 rounded-lg ${
-            message.type === 'success'
+          className={`mb-4 p-4 rounded-lg ${message.type === 'success'
               ? 'bg-green-50 border border-green-200 text-green-800'
               : 'bg-red-50 border border-red-200 text-red-800'
-          }`}
+            }`}
         >
           {message.text}
         </div>
@@ -209,15 +208,14 @@ export default function Endpoints() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                        endpoint.http_method === 'POST'
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${endpoint.http_method === 'POST'
                           ? 'bg-blue-100 text-blue-800'
                           : endpoint.http_method === 'GET'
-                          ? 'bg-green-100 text-green-800'
-                          : endpoint.http_method === 'PUT'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
+                            ? 'bg-green-100 text-green-800'
+                            : endpoint.http_method === 'PUT'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                        }`}
                     >
                       {endpoint.http_method}
                     </span>

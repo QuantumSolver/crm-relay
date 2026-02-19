@@ -13,7 +13,7 @@ export default function Config() {
     try {
       const data = await configApi.get();
       setConfig(data);
-      setLocalEndpoint(data.local_endpoint);
+      setLocalEndpoint(data?.local_endpoint || '');
     } catch (error) {
       console.error('Failed to fetch config:', error);
       showMessage('error', 'Failed to load configuration');
@@ -81,11 +81,10 @@ export default function Config() {
 
       {message && (
         <div
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-            message.type === 'success'
+          className={`flex items-center gap-3 px-4 py-3 rounded-lg ${message.type === 'success'
               ? 'bg-green-50 border border-green-200 text-green-700'
               : 'bg-red-50 border border-red-200 text-red-700'
-          }`}
+            }`}
         >
           {message.type === 'success' ? (
             <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -192,15 +191,15 @@ export default function Config() {
             </div>
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <span className="text-gray-600 font-medium">Max Retries</span>
-              <span className="font-semibold text-gray-900">{config.retry_config.max_retries}</span>
+              <span className="font-semibold text-gray-900">{config.retry_config?.max_retries ?? 0}</span>
             </div>
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <span className="text-gray-600 font-medium">Retry Delay</span>
-              <span className="font-semibold text-gray-900">{config.retry_config.retry_delay}ms</span>
+              <span className="font-semibold text-gray-900">{config.retry_config?.retry_delay ?? 0}ms</span>
             </div>
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <span className="text-gray-600 font-medium">Backoff Multiplier</span>
-              <span className="font-semibold text-gray-900">{config.retry_config.backoff_multiplier}x</span>
+              <span className="font-semibold text-gray-900">{config.retry_config?.backoff_multiplier ?? 0}x</span>
             </div>
           </div>
         </div>
