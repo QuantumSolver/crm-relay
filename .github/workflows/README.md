@@ -8,15 +8,27 @@ This directory contains GitHub Actions workflows for the CRM Relay Server projec
 
 ### What It Does
 
-This workflow automatically builds and pushes Docker images to GitHub Container Registry (GHCR) whenever you:
+This workflow automatically builds and pushes **multi-architecture Docker images** to GitHub Container Registry (GHCR) whenever you:
 - Push to `main` or `master` branch
 - Create a tag (e.g., `v1.0.0`)
 - Open a pull request
+
+### Supported Architectures
+
+The workflow builds Docker images for multiple platforms:
+
+| Platform | Architecture | Use Case |
+|----------|-------------|----------|
+| `linux/amd64` | x86_64 | Standard servers, cloud VMs, most desktops |
+| `linux/arm64` | ARM64 | Apple Silicon Macs, ARM servers, Raspberry Pi 4/5 |
+| `linux/arm/v7` | ARMv7 | Raspberry Pi 3 and older ARM devices |
 
 ### Images Built
 
 - **Relay Server**: `ghcr.io/QuantumSolver/crm-relay/relay-server`
 - **Relay Client**: `ghcr.io/QuantumSolver/crm-relay/relay-client`
+
+Each image contains binaries for all supported architectures. Docker will automatically pull the correct architecture for your system.
 
 ### Authentication
 
@@ -42,15 +54,36 @@ The workflow generates multiple tags for each image:
 
 ### Using the Images
 
-#### Pull Images
+#### Pull Images (Automatic Architecture Selection)
+
+Docker automatically selects the correct architecture for your system:
 
 ```bash
-# Pull latest images
+# Pull latest images (Docker picks the right architecture)
 docker pull ghcr.io/QuantumSolver/crm-relay/relay-server:latest
 docker pull ghcr.io/QuantumSolver/crm-relay/relay-client:latest
 
 # Pull specific version
 docker pull ghcr.io/QuantumSolver/crm-relay/relay-server:v1.0.0
+```
+
+#### Pull Specific Architecture
+
+If you need a specific architecture (e.g., for cross-platform deployment):
+
+```bash
+# Pull ARM64 image explicitly
+docker pull --platform linux/arm64 ghcr.io/QuantumSolver/crm-relay/relay-server:latest
+
+# Pull AMD64 image explicitly
+docker pull --platform linux/amd64 ghcr.io/QuantumSolver/crm-relay/relay-server:latest
+```
+
+#### Verify Architecture
+
+```bash
+# Check which architecture was pulled
+docker inspect ghcr.io/QuantumSolver/crm-relay/relay-server:latest | grep Architecture
 ```
 
 #### Update docker-compose.yml
@@ -98,6 +131,67 @@ cache-from: type=gha
 cache-to: type=gha,mode=max
 ```
 
+### Multi-Architecture Build Details
+
+The workflow uses Docker Buildx with QEMU for cross-platform builds:
+
+1. **QEMU Setup**: Enables emulation for non-native architectures
+2. **Buildx**: Docker's enhanced build system with multi-platform support
+3. **Platform Matrix**: Builds for `linux/amd64`, `linux/arm64`, and `linux/arm/v7`
+4. **Manifest Creation**: Creates a multi-arch manifest that Docker uses to select the right image
+
+#### Build Time Considerations
+
+Multi-architecture builds take longer than single-architecture builds:
+- **Single arch**: ~2-3 minutes
+- **Multi-arch**: ~5-8 minutes (builds all platforms in parallel)
+
+The trade-off is worth it for:
+- Wider platform support
+- Automatic architecture selection
+- Single image tag for all platforms
+
+### Local Multi-Architecture Builds
+
+You can build multi-architecture binaries locally using the Makefile:
+
+```bash
+# Build all architectures
+make build-multiarch
+
+# Build specific architecture
+make build-server-amd64
+make build-server-arm64
+make build-server-armv7
+
+# Build client for specific architecture
+make build-client-arm64
+```
+
+This creates binaries like:
+- `bin/relay-server-linux-amd64`
+- `bin/relay-server-linux-arm64`
+- `bin/relay-server-linux-armv7`
+
+#### Local Docker Multi-Arch Build
+
+To build multi-arch Docker images locally:
+
+```bash
+# Install buildx (if not already installed)
+docker buildx version
+
+# Create and use a multi-arch builder
+docker buildx create --name multiarch --use
+docker buildx inspect --bootstrap
+
+# Build and push multi-arch images
+docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 \
+  -t ghcr.io/QuantumSolver/crm-relay/relay-server:latest \
+  -f Dockerfile.relay-server \
+  --push .
+```
+
 ### Pull Request Behavior
 
 On pull requests, images are **built but not pushed**. This allows you to:
@@ -133,6 +227,72 @@ The workflow uses `GITHUB_TOKEN`, which should work automatically. If you see au
 1. Verify the workflow has `packages: write` permission
 2. Check that you're pushing to the correct repository
 3. Ensure your GitHub account has permission to write packages
+
+#### Build Fails on Specific Architecture
+
+If the build fails for a specific platform:
+1. Check the workflow logs for the specific architecture
+2. Verify Go supports the target architecture
+3. Check for platform-specific dependencies in your code
+4. Consider removing problematic platforms from the `PLATFORMS` env var
+
+#### Slow Build Times
+
+Multi-architecture builds are slower. To speed up:
+1. Reduce the number of platforms (e.g., remove `linux/arm/v7` if not needed)
+2. Use GitHub Actions cache (already enabled)
+3. Optimize Dockerfile layers
+4. Consider building only on tag releases instead of every push
+
+#### QEMU Emulation Issues
+
+If you see QEMU-related errors:
+1. Ensure `docker/setup-qemu-action@v3` is running
+2. Check that the platforms are supported by QEMU
+3. Verify the workflow has sufficient resources
+
+### Platform-Specific Considerations
+
+#### ARM64 (Apple Silicon, ARM Servers)
+
+- **Performance**: Native ARM64 builds are fast
+- **Emulation**: AMD64 builds on ARM64 use QEMU (slower)
+- **Use Cases**: Raspberry Pi 4/5, AWS Graviton, Apple Silicon Macs
+
+#### ARMv7 (Raspberry Pi 3 and older)
+
+- **Performance**: Slower than ARM64
+- **Compatibility**: Good for older ARM devices
+- **Use Cases**: Raspberry Pi 3, older ARM boards
+- **Note**: Consider removing if you only support ARM64+
+
+#### AMD64 (x86_64)
+
+- **Performance**: Fastest on x86_64 systems
+- **Compatibility**: Universal for most servers
+- **Use Cases**: Cloud VMs, standard servers, most desktops
+
+### Adding or Removing Platforms
+
+To modify supported platforms, edit the workflow:
+
+```yaml
+env:
+  PLATFORMS: linux/amd64,linux/arm64  # Removed linux/arm/v7
+```
+
+Or add more platforms:
+
+```yaml
+env:
+  PLATFORMS: linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le
+```
+
+**Note**: Only add platforms that:
+1. Are supported by Go
+2. Are supported by Alpine Linux
+3. Are supported by QEMU (for emulation)
+4. You actually need for deployment
 
 ### Security Best Practices
 

@@ -1,4 +1,4 @@
-.PHONY: build build-server build-client test test-coverage clean docker-build docker-up docker-down docker-logs run-server run-client
+.PHONY: build build-server build-client build-multiarch test test-coverage clean docker-build docker-up docker-down docker-logs run-server run-client
 
 # Build targets
 build: build-server build-client
@@ -10,6 +10,33 @@ build-server:
 build-client:
 	@echo "Building relay client..."
 	@export PATH=/snap/go/current/bin:$PATH && go build -o bin/relay-client ./cmd/relay-client
+
+# Multi-architecture build targets
+build-multiarch: build-server-amd64 build-server-arm64 build-server-armv7 build-client-amd64 build-client-arm64 build-client-armv7
+
+build-server-amd64:
+	@echo "Building relay server for linux/amd64..."
+	@export PATH=/snap/go/current/bin:$PATH && GOOS=linux GOARCH=amd64 go build -o bin/relay-server-linux-amd64 ./cmd/relay-server
+
+build-server-arm64:
+	@echo "Building relay server for linux/arm64..."
+	@export PATH=/snap/go/current/bin:$PATH && GOOS=linux GOARCH=arm64 go build -o bin/relay-server-linux-arm64 ./cmd/relay-server
+
+build-server-armv7:
+	@echo "Building relay server for linux/arm/v7..."
+	@export PATH=/snap/go/current/bin:$PATH && GOOS=linux GOARCH=arm GOARM=7 go build -o bin/relay-server-linux-armv7 ./cmd/relay-server
+
+build-client-amd64:
+	@echo "Building relay client for linux/amd64..."
+	@export PATH=/snap/go/current/bin:$PATH && GOOS=linux GOARCH=amd64 go build -o bin/relay-client-linux-amd64 ./cmd/relay-client
+
+build-client-arm64:
+	@echo "Building relay client for linux/arm64..."
+	@export PATH=/snap/go/current/bin:$PATH && GOOS=linux GOARCH=arm64 go build -o bin/relay-client-linux-arm64 ./cmd/relay-client
+
+build-client-armv7:
+	@echo "Building relay client for linux/arm/v7..."
+	@export PATH=/snap/go/current/bin:$PATH && GOOS=linux GOARCH=arm GOARM=7 go build -o bin/relay-client-linux-armv7 ./cmd/relay-client
 
 # Test targets
 test:

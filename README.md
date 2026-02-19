@@ -18,13 +18,14 @@ Meta Platform → Relay Server (public) → Redis Streams → Relay Client (priv
 ## Features
 
 - ✅ High-performance webhook relay using Go and Redis Streams
+- ✅ Multi-architecture support (AMD64, ARM64, ARMv7)
 - ✅ Message persistence with configurable TTL
 - ✅ Automatic retry with exponential backoff
 - ✅ Dead letter queue for failed messages
 - ✅ API key authentication
 - ✅ Health check endpoints with metrics
 - ✅ Graceful shutdown
-- ✅ Docker support
+- ✅ Docker support with multi-platform images
 - ✅ Single binary deployment
 
 ## Quick Start
@@ -89,6 +90,47 @@ Meta Platform → Relay Server (public) → Redis Streams → Relay Client (priv
    ```bash
    docker-compose down
    ```
+
+### Using Pre-built Multi-Architecture Images
+
+Pull images from GitHub Container Registry (supports AMD64, ARM64, ARMv7):
+
+```bash
+# Pull latest images
+docker pull ghcr.io/QuantumSolver/crm-relay/relay-server:latest
+docker pull ghcr.io/QuantumSolver/crm-relay/relay-client:latest
+
+# Docker automatically selects the correct architecture for your system
+```
+
+Update your `docker-compose.yml` to use pre-built images:
+
+```yaml
+services:
+  relay-server:
+    image: ghcr.io/QuantumSolver/crm-relay/relay-server:latest
+    # Remove build section
+
+  relay-client:
+    image: ghcr.io/QuantumSolver/crm-relay/relay-client:latest
+    # Remove build section
+```
+
+### Building Multi-Architecture Binaries Locally
+
+```bash
+# Build for all supported architectures
+make build-multiarch
+
+# Build for specific architecture
+make build-server-arm64
+make build-client-arm64
+```
+
+This creates binaries like:
+- `bin/relay-server-linux-amd64`
+- `bin/relay-server-linux-arm64`
+- `bin/relay-server-linux-armv7`
 
 ## Configuration
 

@@ -1,5 +1,10 @@
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.21-alpine AS builder
+
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /app
 
@@ -13,11 +18,13 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build relay client
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o relay-client ./cmd/relay-client
+# Build relay client for target platform
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -a -installsuffix cgo -o relay-client ./cmd/relay-client
 
 # Runtime stage
-FROM alpine:latest
+FROM --platform=$TARGETPLATFORM alpine:latest
+
+ARG TARGETARCH
 
 RUN apk --no-cache add ca-certificates
 
