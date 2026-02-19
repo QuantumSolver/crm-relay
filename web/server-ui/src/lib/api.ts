@@ -33,7 +33,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear auth storage
+      // Don't intercept 401 from login endpoint — let the auth store handle it
+      const requestUrl = error.config?.url || '';
+      if (requestUrl.includes('/api/auth/login')) {
+        return Promise.reject(error);
+      }
+      // Clear auth storage for other 401s (expired token, etc.)
       localStorage.removeItem('auth-storage');
       window.location.href = '/login';
     }
