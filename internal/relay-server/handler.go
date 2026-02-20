@@ -6,13 +6,14 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/QuantumSolver/crm-relay/internal/auth"
 	"github.com/QuantumSolver/crm-relay/internal/models"
 	"github.com/QuantumSolver/crm-relay/internal/storage"
+	"github.com/google/uuid"
 )
 
 // Handler handles HTTP requests for the relay server
@@ -49,8 +50,8 @@ func (h *Handler) HandleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// Extract platform from URL path
 	platform := ""
-	if len(r.URL.Path) > 8 && r.URL.Path[:8] == "/webhook/" {
-		platform = r.URL.Path[8:]
+	if strings.HasPrefix(r.URL.Path, "/webhook/") {
+		platform = strings.TrimPrefix(r.URL.Path, "/webhook/")
 	}
 
 	// Validate API key
@@ -191,7 +192,7 @@ func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 
 	// Prepare health response
 	health := map[string]interface{}{
-		"status": "healthy",
+		"status":    "healthy",
 		"timestamp": time.Now(),
 		"redis": map[string]interface{}{
 			"status":      redisStatus,
@@ -200,10 +201,10 @@ func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 		"metrics": map[string]interface{}{
 			"webhooks_received":  atomic.LoadInt64(&h.metrics.WebhooksReceived),
 			"webhooks_processed": atomic.LoadInt64(&h.metrics.WebhooksProcessed),
-			"webhooks_failed":     atomic.LoadInt64(&h.metrics.WebhooksFailed),
-			"webhooks_retried":    atomic.LoadInt64(&h.metrics.WebhooksRetried),
-			"average_latency_ms":  atomic.LoadInt64(&h.metrics.AverageLatency),
-			"last_webhook_time":   h.metrics.LastWebhookTime,
+			"webhooks_failed":    atomic.LoadInt64(&h.metrics.WebhooksFailed),
+			"webhooks_retried":   atomic.LoadInt64(&h.metrics.WebhooksRetried),
+			"average_latency_ms": atomic.LoadInt64(&h.metrics.AverageLatency),
+			"last_webhook_time":  h.metrics.LastWebhookTime,
 		},
 	}
 
@@ -794,12 +795,12 @@ func (h *Handler) HandleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	metrics := map[string]interface{}{
 		"webhooks_received":  atomic.LoadInt64(&h.metrics.WebhooksReceived),
 		"webhooks_processed": atomic.LoadInt64(&h.metrics.WebhooksProcessed),
-		"webhooks_failed":     atomic.LoadInt64(&h.metrics.WebhooksFailed),
-		"webhooks_retried":    atomic.LoadInt64(&h.metrics.WebhooksRetried),
-		"queue_depth":         queueDepth,
-		"pending_messages":    pendingMessages,
-		"average_latency_ms":  atomic.LoadInt64(&h.metrics.AverageLatency),
-		"last_webhook_time":   h.metrics.LastWebhookTime,
+		"webhooks_failed":    atomic.LoadInt64(&h.metrics.WebhooksFailed),
+		"webhooks_retried":   atomic.LoadInt64(&h.metrics.WebhooksRetried),
+		"queue_depth":        queueDepth,
+		"pending_messages":   pendingMessages,
+		"average_latency_ms": atomic.LoadInt64(&h.metrics.AverageLatency),
+		"last_webhook_time":  h.metrics.LastWebhookTime,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
