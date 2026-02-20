@@ -130,8 +130,7 @@ func main() {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Skip authentication for public routes
 			if r.URL.Path == "/health" ||
-				r.URL.Path == "/webhook" ||
-				r.URL.Path == "/webhook/" ||
+				strings.HasPrefix(r.URL.Path, "/webhook") ||
 				r.URL.Path == "/api/auth/login" ||
 				r.URL.Path == "/assets/" ||
 				r.URL.Path == "/index.html" ||
