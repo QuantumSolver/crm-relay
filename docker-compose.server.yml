@@ -34,8 +34,8 @@ services:
       - JWT_SECRET=${JWT_SECRET:-$(openssl rand -base64 32)}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-$(openssl rand -base64 16)}
-      - JWT_EXPIRATION=${JWT_EXPIRATION:-24h}
-      - LOCAL_WEBHOOK_URL=${LOCAL_WEBHOOK_URL:-http://localhost:3000/webhook}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-86400}
+      - LOCAL_WEBHOOK_URL=${LOCAL_WEBHOOK_URL:-http://host.docker.internal:3000/webhook}
       - MAX_RETRIES=${MAX_RETRIES:-3}
       - RETRY_DELAY=${RETRY_DELAY:-1000}
       - RETRY_MULTIPLIER=${RETRY_MULTIPLIER:-2.0}
