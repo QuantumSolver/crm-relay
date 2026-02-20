@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/QuantumSolver/crm-relay/internal/models"
 	"github.com/QuantumSolver/crm-relay/internal/storage"
+	"github.com/redis/go-redis/v9"
 )
 
 // Consumer consumes messages from Redis stream
@@ -93,6 +93,9 @@ func (c *Consumer) processMessage(ctx context.Context, message interface{}) {
 		log.Printf("Failed to parse message %s: %v", redisMessage.ID, err)
 		return
 	}
+
+	// Update metrics - Received
+	atomic.AddInt64(&c.metrics.WebhooksReceived, 1)
 
 	// Log routing information
 	if relayMessage.Webhook.Platform != "" {

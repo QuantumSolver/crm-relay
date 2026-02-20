@@ -22,11 +22,11 @@ type Handler struct {
 }
 
 // NewHandler creates a new handler
-func NewHandler(redisClient *storage.RedisClient, config *models.Config, jwtService *auth.JWTService) *Handler {
+func NewHandler(redisClient *storage.RedisClient, config *models.Config, jwtService *auth.JWTService, metrics *models.Metrics) *Handler {
 	return &Handler{
 		redisClient: redisClient,
 		config:      config,
-		metrics:     &models.Metrics{},
+		metrics:     metrics,
 		jwtService:  jwtService,
 	}
 }

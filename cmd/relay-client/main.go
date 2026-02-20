@@ -88,7 +88,7 @@ func main() {
 	consumer := relayclientpkg.NewConsumer(redisClient, cfg, forwarder)
 
 	// Create handler
-	handler := relayclientpkg.NewHandler(redisClient, cfg, jwtService)
+	handler := relayclientpkg.NewHandler(redisClient, cfg, jwtService, consumer.GetMetrics())
 
 	// Set up HTTP server with enhanced ServeMux (Go 1.22+)
 	mux := http.NewServeMux()
